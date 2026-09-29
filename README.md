@@ -5,7 +5,7 @@ Backlight control for USB keyboards whose backlight is wired to the Scroll Lock 
 ## Check
 
 ```sh
-./install.sh --list
+curl -fsSL https://raw.githubusercontent.com/PromiseFru/kbd-backlight/main/install.sh | bash -s -- --list
 ```
 
 Lists USB keyboards with a Scroll Lock LED as `VENDOR:PRODUCT  NAME`.
@@ -18,10 +18,24 @@ If the backlight turns on, this tool works for your keyboard.
 
 ## Install
 
+Inspect first:
+
 ```sh
-./install.sh                  # auto-detect, or pick from a list
-./install.sh 1a2c:212a        # a specific keyboard
-KEY='<Super>F12' ./install.sh # different GNOME shortcut (default: Scroll_Lock)
+curl -fsSL https://raw.githubusercontent.com/PromiseFru/kbd-backlight/main/install.sh | less
+```
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/PromiseFru/kbd-backlight/main/install.sh | bash                          # auto-detect, or pick from a list
+curl -fsSL https://raw.githubusercontent.com/PromiseFru/kbd-backlight/main/install.sh | bash -s -- 1a2c:212a          # a specific keyboard
+curl -fsSL https://raw.githubusercontent.com/PromiseFru/kbd-backlight/main/install.sh | KEY='<Super>F12' bash         # different GNOME shortcut (default: Scroll_Lock)
+```
+
+From a clone:
+
+```sh
+git clone https://github.com/PromiseFru/kbd-backlight.git
+cd kbd-backlight
+./install.sh
 ```
 
 ## Use
@@ -44,6 +58,12 @@ systemctl --user status kbd-backlight
 ## Uninstall
 
 ```sh
+curl -fsSL https://raw.githubusercontent.com/PromiseFru/kbd-backlight/main/uninstall.sh | bash
+```
+
+From a clone:
+
+```sh
 ./uninstall.sh
 ```
 
@@ -51,7 +71,7 @@ systemctl --user status kbd-backlight
 
 | Path | Purpose |
 |---|---|
-| `/etc/udev/rules.d/99-kbd-backlight.rules` | Turns the LED on at connect, lets your group write it |
+| `/etc/udev/rules.d/99-kbd-backlight.rules` | Turns the LED on at connect |
 | `~/.local/bin/kbd-backlight` | Control script |
 | `~/.config/systemd/user/kbd-backlight.service` | Re-applies the state after Caps/Num Lock resets it |
 | `~/.config/kbd-backlight/keyboard` | Configured keyboard name |
