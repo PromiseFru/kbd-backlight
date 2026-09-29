@@ -1,0 +1,9 @@
+[Unit]
+Description=Keep keyboard backlight (Scroll Lock LED) in the chosen state
+
+[Service]
+ExecStart=%h/.local/bin/kbd-backlight daemon
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Control a USB keyboard backlight that is wired to its Scroll Lock LED.
+# Usage: kbd-backlight on|off|toggle|status|daemon
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}/kbd-backlight/keyboard"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/kbd-backlight"
+
+read -r KBD_NAME 2>/dev/null <"$CONF" || {
+  echo "no keyboard configured in $CONF, run install.sh" >&2
+  exit 1
+}
+
+# Sets LED to the keyboard's brightness file, or "" if it isn't plugged in.
+# Uses only bash builtins so the daemon loop never forks.
+find_led() {
+  local d n
+  LED=
+  for d in /sys/class/leds/input*::scrolllock; do
+    read -r n <"$d/device/name" 2>/dev/null
+    [[ $n == "$KBD_NAME" ]] && {
+      LED="$d/brightness"
+      return
+    }
+  done
+}
+
+set_led() {
+  find_led
+  [[ -n $LED ]] && echo "$1" >"$LED" 2>/dev/null
+}
+wanted() {
+  local w=1
+  [[ -r $STATE ]] && read -r w <"$STATE"
+  [[ $w == 1 ]]
+}
+
+mkdir -p "${STATE%/*}"
+case "$1" in
+on)
+  echo 1 >"$STATE"
+  set_led 1
+  ;;
+off)
+  echo 0 >"$STATE"
+  set_led 0
+  ;;
+toggle) if wanted; then "$0" off; else "$0" on; fi ;;
+status)
+  find_led
+  [[ -n $LED ]] || {
+    echo "$KBD_NAME: not connected"
+    exit 1
+  }
+  read -r cur <"$LED"
+  echo "$KBD_NAME: $([[ $cur == 1 ]] && echo on || echo off) ($LED)"
+  ;;
+daemon)              # Desktops reset the LED whenever Caps/Num Lock changes; re-apply it.
+  exec {tick}<> <(:) # a pipe nobody writes to: read -t on it is a fork-free sleep
+  find_led
+  while true; do
+    if [[ -z $LED ]] || ! read -r cur <"$LED" 2>/dev/null; then
+      find_led # keyboard unplugged or renumbered; look it up again
+    else
+      want=0
+      wanted && want=1
+      [[ $cur != "$want" ]] && echo "$want" >"$LED" 2>/dev/null
+    fi
+    read -rt 0.3 -u "$tick"
+  done
+  ;;
+*)
+  echo "usage: ${0##*/} on|off|toggle|status|daemon" >&2
+  exit 1
+  ;;
+esac
